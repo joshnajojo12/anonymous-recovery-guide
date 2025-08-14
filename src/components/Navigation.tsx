@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Navigation = () => {
   return (
@@ -11,27 +12,31 @@ const Navigation = () => {
           </div>
           
           <div className="hidden md:flex items-center space-x-8">
-            <a href="#how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
+            <Link to="/#how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
               How It Works
-            </a>
-            <a href="#mentors" className="text-muted-foreground hover:text-primary transition-colors">
+            </Link>
+            <Link to="/find-mentors" className="text-muted-foreground hover:text-primary transition-colors">
               Find Mentors
-            </a>
-            <a href="#safety" className="text-muted-foreground hover:text-primary transition-colors">
+            </Link>
+            <Link to="/#safety" className="text-muted-foreground hover:text-primary transition-colors">
               Safety & Privacy
-            </a>
-            <a href="#support" className="text-muted-foreground hover:text-primary transition-colors">
+            </Link>
+            <Link to="/#support" className="text-muted-foreground hover:text-primary transition-colors">
               Support
-            </a>
+            </Link>
           </div>
           
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="sm">
-              Sign In
-            </Button>
-            <Button variant="hero" size="sm">
-              Get Started
-            </Button>
+            <Link to="/signin">
+              <Button variant="ghost" size="sm">
+                Sign In
+              </Button>
+            </Link>
+            <Link to="/find-mentors">
+              <Button variant="hero" size="sm">
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

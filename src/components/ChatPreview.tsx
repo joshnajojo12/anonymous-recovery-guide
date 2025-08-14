@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const ChatPreview = () => {
   return (
@@ -106,9 +107,11 @@ const ChatPreview = () => {
               </div>
             </div>
             
-            <Button variant="hero" size="lg" className="w-full">
-              Start Your Recovery Journey
-            </Button>
+            <Link to="/find-mentors">
+              <Button variant="hero" size="lg" className="w-full">
+                Start Your Recovery Journey
+              </Button>
+            </Link>
           </div>
         </div>
       </div>

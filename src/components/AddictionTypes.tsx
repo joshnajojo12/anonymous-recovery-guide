@@ -1,5 +1,6 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const addictionTypes = [
   {
@@ -68,9 +69,11 @@ const AddictionTypes = () => {
                 <p className="text-muted-foreground text-center mb-6 leading-relaxed">
                   {addiction.description}
                 </p>
-                <Button variant="outline" className="w-full">
-                  Find Mentors
-                </Button>
+                <Link to="/find-mentors">
+                  <Button variant="outline" className="w-full">
+                    Find Mentors
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}
@@ -80,9 +83,11 @@ const AddictionTypes = () => {
           <p className="text-muted-foreground mb-6">
             Don't see your specific area? We support all types of addiction recovery.
           </p>
-          <Button variant="supportive" size="lg">
-            Browse All Categories
-          </Button>
+          <Link to="/find-mentors">
+            <Button variant="supportive" size="lg">
+              Browse All Categories
+            </Button>
+          </Link>
         </div>
       </div>
     </section>
