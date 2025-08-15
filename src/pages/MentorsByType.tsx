@@ -164,9 +164,11 @@ const MentorsByType = () => {
                 </div>
                 
                 <div className="flex gap-2 pt-4">
-                  <Button variant="supportive" className="flex-1">
-                    Start Chat
-                  </Button>
+                  <Link to={`/chat/${mentor.id}`}>
+                    <Button variant="supportive" className="flex-1">
+                      Start Chat
+                    </Button>
+                  </Link>
                   <Button variant="outline" className="flex-1">
                     View Profile
                   </Button>
