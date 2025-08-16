@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Heart, Shield, Users, CheckCircle } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from '@supabase/supabase-js';
 
 const addictionTypes = [
   { id: "alcohol", name: "Alcohol", description: "Help with alcohol dependency and sobriety" },
@@ -23,16 +25,30 @@ const addictionTypes = [
 ];
 
 const BecomeMentor = () => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(false);
   const [selectedAreas, setSelectedAreas] = useState<string[]>([]);
   const [formData, setFormData] = useState({
-    username: "",
-    email: "",
     experience: "",
     bio: "",
     availability: "",
     sessionType: ""
   });
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        navigate("/auth");
+        return;
+      }
+      setUser(session.user);
+    };
+    
+    checkUser();
+  }, [navigate]);
 
   const handleAreaToggle = (areaId: string) => {
     setSelectedAreas(prev => 
@@ -42,8 +58,14 @@ const BecomeMentor = () => {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    
     if (selectedAreas.length === 0) {
       toast({
         title: "Please select at least one area",
@@ -53,13 +75,41 @@ const BecomeMentor = () => {
       return;
     }
     
-    toast({
-      title: "Application submitted!",
-      description: "We'll review your application and get back to you soon.",
-    });
+    setLoading(true);
     
-    // Here you would typically submit to Supabase
-    console.log("Mentor application:", { ...formData, areas: selectedAreas });
+    try {
+      // Parse experience years from string
+      const experienceYears = formData.experience === "1-2" ? 2 : 
+                             formData.experience === "3-5" ? 5 :
+                             formData.experience === "6-10" ? 10 : 15;
+      
+      const { error } = await supabase
+        .from('mentors')
+        .insert({
+          user_id: user.id,
+          specialization: selectedAreas.join(', '),
+          bio: formData.bio,
+          experience_years: experienceYears,
+          is_available: true
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Application submitted!",
+        description: "Your mentor profile has been created successfully.",
+      });
+      
+      navigate("/find-mentors");
+    } catch (error: any) {
+      toast({
+        title: "Submission failed",
+        description: error.message || "There was an error submitting your application",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -117,28 +167,13 @@ const BecomeMentor = () => {
                 {/* Basic Info */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Basic Information</h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="username">Anonymous Username</Label>
-                      <Input
-                        id="username"
-                        value={formData.username}
-                        onChange={(e) => setFormData(prev => ({...prev, username: e.target.value}))}
-                        placeholder="mentor_helper123"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="email">Email (for contact only)</Label>
-                      <Input
-                        id="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
-                        placeholder="your.email@example.com"
-                        required
-                      />
-                    </div>
+                  <div className="text-center p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      You're logged in and ready to apply as a mentor!
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Your anonymous profile will be created based on your account.
+                    </p>
                   </div>
                 </div>
 
@@ -230,8 +265,8 @@ const BecomeMentor = () => {
                 </div>
 
                 <div className="flex gap-4 pt-4">
-                  <Button type="submit" variant="hero" size="lg" className="flex-1">
-                    Submit Application
+                  <Button type="submit" variant="hero" size="lg" className="flex-1" disabled={loading}>
+                    {loading ? "Submitting..." : "Submit Application"}
                   </Button>
                   <Link to="/">
                     <Button variant="outline" size="lg">

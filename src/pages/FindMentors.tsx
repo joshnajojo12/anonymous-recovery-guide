@@ -1,56 +1,86 @@
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import Navigation from "@/components/Navigation";
 
 const FindMentors = () => {
+  const [mentorCounts, setMentorCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
   const addictionTypes = [
     {
       type: "Alcohol",
       icon: "🍷",
       description: "Professional support for alcohol dependency recovery",
-      mentors: "127 mentors",
-      available: 23
+      dbKey: "alcohol"
     },
     {
       type: "Substance",
       icon: "💊", 
       description: "Guidance from those who've overcome drug addiction",
-      mentors: "94 mentors",
-      available: 18
+      dbKey: "substance"
     },
     {
       type: "Gaming",
       icon: "🎮",
       description: "Break free from gaming addiction with expert help", 
-      mentors: "56 mentors",
-      available: 12
+      dbKey: "gaming"
     },
     {
       type: "Smoking",
       icon: "🚭",
       description: "Quit smoking with personalized mentorship support",
-      mentors: "89 mentors", 
-      available: 15
+      dbKey: "smoking"
     },
     {
       type: "Gambling",
       icon: "🎰",
       description: "Overcome gambling addiction with experienced guides",
-      mentors: "43 mentors",
-      available: 8
+      dbKey: "gambling"
     },
     {
       type: "Social Media",
       icon: "📱",
       description: "Regain control over social media and digital habits",
-      mentors: "71 mentors",
-      available: 19
+      dbKey: "social-media"
     }
   ];
 
+  useEffect(() => {
+    const fetchMentorCounts = async () => {
+      try {
+        const { data: mentors, error } = await supabase
+          .from('mentors')
+          .select('specialization')
+          .eq('is_available', true);
+
+        if (error) throw error;
+
+        const counts: Record<string, number> = {};
+        addictionTypes.forEach(type => {
+          counts[type.dbKey] = mentors?.filter(mentor => 
+            mentor.specialization?.toLowerCase().includes(type.dbKey.toLowerCase())
+          ).length || 0;
+        });
+
+        setMentorCounts(counts);
+      } catch (error) {
+        console.error('Error fetching mentor counts:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMentorCounts();
+  }, []);
+
   return (
-    <div className="min-h-screen bg-background pt-20">
-      <div className="max-w-6xl mx-auto px-safe py-12">
+    <div className="min-h-screen bg-background">
+      <Navigation />
+      <div className="pt-24 pb-16">
+        <div className="max-w-6xl mx-auto px-safe py-12">
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold text-foreground mb-4">
             Find Your Recovery Mentor
@@ -62,30 +92,35 @@ const FindMentors = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {addictionTypes.map((addiction, index) => (
-            <Card key={index} className="shadow-gentle hover:shadow-warm transition-all duration-300 border-border">
-              <CardHeader className="text-center pb-4">
-                <div className="text-4xl mb-3">{addiction.icon}</div>
-                <CardTitle className="text-xl text-foreground">{addiction.type}</CardTitle>
-                <CardDescription className="text-trust font-medium text-sm">
-                  {addiction.available} available now
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <p className="text-muted-foreground text-center mb-4 leading-relaxed">
-                  {addiction.description}
-                </p>
-                <p className="text-sm text-muted-foreground text-center mb-6">
-                  {addiction.mentors}
-                </p>
-                <Link to={`/mentors/${addiction.type.toLowerCase()}`}>
-                  <Button variant="supportive" className="w-full">
-                    Connect Now
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          ))}
+          {addictionTypes.map((addiction, index) => {
+            const mentorCount = mentorCounts[addiction.dbKey] || 0;
+            const availableCount = Math.floor(mentorCount * 0.7); // Assume 70% are available
+            
+            return (
+              <Card key={index} className="shadow-gentle hover:shadow-warm transition-all duration-300 border-border">
+                <CardHeader className="text-center pb-4">
+                  <div className="text-4xl mb-3">{addiction.icon}</div>
+                  <CardTitle className="text-xl text-foreground">{addiction.type}</CardTitle>
+                  <CardDescription className="text-trust font-medium text-sm">
+                    {loading ? "Loading..." : `${availableCount} available now`}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="pt-0">
+                  <p className="text-muted-foreground text-center mb-4 leading-relaxed">
+                    {addiction.description}
+                  </p>
+                  <p className="text-sm text-muted-foreground text-center mb-6">
+                    {loading ? "Loading..." : `${mentorCount} mentors`}
+                  </p>
+                  <Link to={`/mentors/${addiction.type.toLowerCase()}`}>
+                    <Button variant="supportive" className="w-full" disabled={loading}>
+                      Connect Now
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
 
         <div className="text-center mt-12">
@@ -101,6 +136,7 @@ const FindMentors = () => {
               Take Matching Quiz
             </Button>
           </div>
+        </div>
         </div>
       </div>
     </div>

@@ -8,6 +8,7 @@ import FindMentors from "./pages/FindMentors";
 import MentorsByType from "./pages/MentorsByType";
 import BecomeMentor from "./pages/BecomeMentor";
 import Chat from "./pages/Chat";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/mentors/:type" element={<MentorsByType />} />
           <Route path="/become-mentor" element={<BecomeMentor />} />
           <Route path="/chat/:mentorId" element={<Chat />} />
+          <Route path="/auth" element={<Auth />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
