@@ -100,7 +100,7 @@ const BecomeMentor = () => {
         description: "Your mentor profile has been created successfully.",
       });
       
-      navigate("/find-mentors");
+      navigate("/mentor-dashboard");
     } catch (error: any) {
       toast({
         title: "Submission failed",
@@ -167,12 +167,12 @@ const BecomeMentor = () => {
                 {/* Basic Info */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Basic Information</h3>
-                  <div className="text-center p-4 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">
-                      You're logged in and ready to apply as a mentor!
+                  <div className="text-center p-4 bg-primary/10 rounded-lg border border-primary/20">
+                    <p className="text-sm text-foreground font-medium">
+                      Complete your mentor profile setup
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Your anonymous profile will be created based on your account.
+                      Choose your specialization areas and share your experience to help others.
                     </p>
                   </div>
                 </div>

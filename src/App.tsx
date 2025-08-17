@@ -10,6 +10,7 @@ import BecomeMentor from "./pages/BecomeMentor";
 import MentorDashboard from "./pages/MentorDashboard"; 
 import Chat from "./pages/Chat";
 import Auth from "./pages/Auth";
+import RoleSelection from "./pages/RoleSelection";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/mentor-dashboard" element={<MentorDashboard />} />
           <Route path="/chat/:mentorId" element={<Chat />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/role-selection" element={<RoleSelection />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>

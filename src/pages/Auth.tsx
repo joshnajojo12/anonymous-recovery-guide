@@ -19,8 +19,7 @@ const Auth = () => {
     email: "",
     password: "",
     username: "",
-    fullName: "",
-    userType: ""
+    fullName: ""
   });
   const [signInData, setSignInData] = useState({
     email: "",
@@ -37,7 +36,7 @@ const Auth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          navigate("/");
+          navigate("/role-selection");
         }
       }
     );
@@ -48,7 +47,7 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        navigate("/");
+        navigate("/role-selection");
       }
     });
 
@@ -57,19 +56,9 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!signUpData.userType) {
-      toast({
-        title: "Please select user type",
-        description: "Choose whether you want to be a patient or mentor",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setLoading(true);
     
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/role-selection`;
     
     const { error } = await supabase.auth.signUp({
       email: signUpData.email,
@@ -78,8 +67,7 @@ const Auth = () => {
         emailRedirectTo: redirectUrl,
         data: {
           username: signUpData.username,
-          full_name: signUpData.fullName,
-          user_type: signUpData.userType
+          full_name: signUpData.fullName
         }
       }
     });
@@ -176,18 +164,6 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
-                <div>
-                  <Label htmlFor="user-type">I want to</Label>
-                  <Select onValueChange={(value) => setSignUpData(prev => ({ ...prev, userType: value }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Choose your role" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="patient">Get Support (Patient)</SelectItem>
-                      <SelectItem value="mentor">Help Others (Mentor)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
                 <div>
                   <Label htmlFor="username">Anonymous Username</Label>
                   <Input
