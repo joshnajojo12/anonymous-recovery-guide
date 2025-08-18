@@ -83,7 +83,8 @@ const BecomeMentor = () => {
                              formData.experience === "3-5" ? 5 :
                              formData.experience === "6-10" ? 10 : 15;
       
-      const { error } = await supabase
+      // Create mentor profile and update user type
+      const { error: mentorError } = await supabase
         .from('mentors')
         .insert({
           user_id: user.id,
@@ -93,7 +94,15 @@ const BecomeMentor = () => {
           is_available: true
         });
 
-      if (error) throw error;
+      if (mentorError) throw mentorError;
+
+      // Update user profile to set user_type to mentor
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ user_type: 'mentor' })
+        .eq('user_id', user.id);
+
+      if (profileError) throw profileError;
 
       toast({
         title: "Application submitted!",

@@ -36,7 +36,7 @@ const Auth = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          navigate("/role-selection");
+          navigate("/");
         }
       }
     );
@@ -47,7 +47,7 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        navigate("/role-selection");
+        navigate("/");
       }
     });
 
@@ -58,16 +58,14 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     
-    const redirectUrl = `${window.location.origin}/role-selection`;
-    
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: signUpData.email,
       password: signUpData.password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: {
           username: signUpData.username,
-          full_name: signUpData.fullName
+          full_name: signUpData.fullName,
+          user_type: 'patient' // Default to patient, can change to mentor later
         }
       }
     });
@@ -80,11 +78,12 @@ const Auth = () => {
         description: error.message,
         variant: "destructive"
       });
-    } else {
+    } else if (data.user) {
       toast({
-        title: "Check your email",
-        description: "We've sent you a confirmation link to complete your registration."
+        title: "Account created!",
+        description: "Welcome to Anonymous Recovery!"
       });
+      // Will redirect via useEffect when session is set
     }
   };
 
