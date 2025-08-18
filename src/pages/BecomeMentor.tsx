@@ -40,11 +40,20 @@ const BecomeMentor = () => {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session.user);
+      setUser(session?.user || null);
     };
     
     checkUser();
-  }, [navigate]);
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user || null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const handleAreaToggle = (areaId: string) => {
     setSelectedAreas(prev => 

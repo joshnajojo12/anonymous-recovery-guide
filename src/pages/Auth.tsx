@@ -35,11 +35,12 @@ const Auth = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user) {
-          // Check user profile to determine where to navigate
-          setTimeout(() => {
-            checkUserProfileAndNavigate(session.user.id);
-          }, 100);
+        if (session?.user && event === 'SIGNED_IN') {
+          toast({
+            title: "Welcome!",
+            description: "Successfully signed in."
+          });
+          navigate('/');
         }
       }
     );
@@ -50,12 +51,12 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        checkUserProfileAndNavigate(session.user.id);
+        navigate('/');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const checkUserProfileAndNavigate = async (userId: string) => {
     try {
