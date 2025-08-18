@@ -59,30 +59,10 @@ const Auth = () => {
 
   const checkUserProfileAndNavigate = async (userId: string) => {
     try {
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('user_type')
-        .eq('user_id', userId)
-        .single();
-
-      if (profile?.user_type === 'mentor') {
-        // Check if they have a mentor profile
-        const { data: mentorProfile } = await supabase
-          .from('mentors')
-          .select('id')
-          .eq('user_id', userId)
-          .single();
-
-        if (mentorProfile) {
-          navigate('/mentor-dashboard');
-        } else {
-          navigate('/become-mentor');
-        }
-      } else {
-        navigate('/find-mentors');
-      }
+      // Just navigate to home page after authentication
+      navigate('/');
     } catch (error) {
-      console.error('Error checking profile:', error);
+      console.error('Error in navigation:', error);
       navigate('/');
     }
   };
@@ -92,23 +72,6 @@ const Auth = () => {
     setLoading(true);
     
     try {
-      // First check if user already exists
-      const { data: existingUser } = await supabase
-        .from('profiles')
-        .select('user_id')
-        .eq('username', signUpData.email) // Using email as fallback identifier
-        .single();
-
-      if (existingUser) {
-        toast({
-          title: "Account exists",
-          description: "Please try signing in instead.",
-          variant: "destructive"
-        });
-        setLoading(false);
-        return;
-      }
-
       const { data, error } = await supabase.auth.signUp({
         email: signUpData.email,
         password: signUpData.password,
@@ -123,11 +86,12 @@ const Auth = () => {
 
       if (error) throw error;
 
-      if (data.user) {
+      if (data.user && data.session) {
         toast({
           title: "Account created successfully!",
           description: "Welcome to Anonymous Recovery!"
         });
+        // Navigation will happen via auth state change
       }
     } catch (error: any) {
       console.error('Signup error:', error);

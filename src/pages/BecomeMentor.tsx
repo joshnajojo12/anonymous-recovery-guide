@@ -40,10 +40,6 @@ const BecomeMentor = () => {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session?.user) {
-        navigate("/auth");
-        return;
-      }
       setUser(session.user);
     };
     
@@ -62,6 +58,11 @@ const BecomeMentor = () => {
     e.preventDefault();
     
     if (!user) {
+      toast({
+        title: "Please sign up first",
+        description: "You need to create an account before becoming a mentor",
+        variant: "destructive"
+      });
       navigate("/auth");
       return;
     }

@@ -30,7 +30,7 @@ const Index = () => {
             </Link>
             <Link to="/auth">
               <Button variant="supportive" size="lg">
-                Get Started
+                Sign Up / Login
               </Button>
             </Link>
           </div>
