@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -32,11 +31,15 @@ const Auth = () => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
+        console.log('Auth state change:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          navigate("/");
+          // Check user profile to determine where to navigate
+          setTimeout(() => {
+            checkUserProfileAndNavigate(session.user.id);
+          }, 100);
         }
       }
     );
@@ -47,43 +50,94 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        navigate("/");
+        checkUserProfileAndNavigate(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  const checkUserProfileAndNavigate = async (userId: string) => {
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('user_id', userId)
+        .single();
+
+      if (profile?.user_type === 'mentor') {
+        // Check if they have a mentor profile
+        const { data: mentorProfile } = await supabase
+          .from('mentors')
+          .select('id')
+          .eq('user_id', userId)
+          .single();
+
+        if (mentorProfile) {
+          navigate('/mentor-dashboard');
+        } else {
+          navigate('/become-mentor');
+        }
+      } else {
+        navigate('/find-mentors');
+      }
+    } catch (error) {
+      console.error('Error checking profile:', error);
+      navigate('/');
+    }
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
-    const { data, error } = await supabase.auth.signUp({
-      email: signUpData.email,
-      password: signUpData.password,
-      options: {
-        data: {
-          username: signUpData.username,
-          full_name: signUpData.fullName,
-          user_type: 'patient' // Default to patient, can change to mentor later
-        }
+    try {
+      // First check if user already exists
+      const { data: existingUser } = await supabase
+        .from('profiles')
+        .select('user_id')
+        .eq('username', signUpData.email) // Using email as fallback identifier
+        .single();
+
+      if (existingUser) {
+        toast({
+          title: "Account exists",
+          description: "Please try signing in instead.",
+          variant: "destructive"
+        });
+        setLoading(false);
+        return;
       }
-    });
 
-    setLoading(false);
+      const { data, error } = await supabase.auth.signUp({
+        email: signUpData.email,
+        password: signUpData.password,
+        options: {
+          data: {
+            username: signUpData.username || signUpData.email,
+            full_name: signUpData.fullName || signUpData.username,
+            user_type: 'patient' // Default to patient
+          }
+        }
+      });
 
-    if (error) {
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Account created successfully!",
+          description: "Welcome to Anonymous Recovery!"
+        });
+      }
+    } catch (error: any) {
+      console.error('Signup error:', error);
       toast({
         title: "Sign up failed",
-        description: error.message,
+        description: error.message || "Please try again",
         variant: "destructive"
       });
-    } else if (data.user) {
-      toast({
-        title: "Account created!",
-        description: "Welcome to Anonymous Recovery!"
-      });
-      // Will redirect via useEffect when session is set
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -91,19 +145,30 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email: signInData.email,
-      password: signInData.password
-    });
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: signInData.email,
+        password: signInData.password
+      });
 
-    setLoading(false);
+      if (error) throw error;
 
-    if (error) {
+      if (data.user) {
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in."
+        });
+      }
+    } catch (error: any) {
+      console.error('Sign in error:', error);
       toast({
-        title: "Sign in failed",
-        description: error.message,
+        title: "Sign in failed", 
+        description: error.message === 'Invalid login credentials' ? 
+          "Please check your email and password" : error.message,
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
