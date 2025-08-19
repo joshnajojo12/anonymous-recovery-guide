@@ -35,11 +35,7 @@ const Auth = () => {
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && event === 'SIGNED_IN') {
-          toast({
-            title: "Welcome!",
-            description: "Successfully signed in."
-          });
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           navigate('/');
         }
       }
@@ -77,22 +73,27 @@ const Auth = () => {
         email: signUpData.email,
         password: signUpData.password,
         options: {
+          emailRedirectTo: `${window.location.origin}/`,
           data: {
             username: signUpData.username || signUpData.email,
             full_name: signUpData.fullName || signUpData.username,
-            user_type: 'patient' // Default to patient
+            user_type: 'patient'
           }
         }
       });
 
       if (error) throw error;
 
-      if (data.user && data.session) {
+      if (data.user) {
         toast({
           title: "Account created successfully!",
           description: "Welcome to Anonymous Recovery!"
         });
-        // Navigation will happen via auth state change
+        
+        // If session exists, navigate immediately
+        if (data.session) {
+          navigate('/');
+        }
       }
     } catch (error: any) {
       console.error('Signup error:', error);
@@ -118,11 +119,12 @@ const Auth = () => {
 
       if (error) throw error;
 
-      if (data.user) {
+      if (data.user && data.session) {
         toast({
           title: "Welcome back!",
           description: "Successfully signed in."
         });
+        navigate('/');
       }
     } catch (error: any) {
       console.error('Sign in error:', error);

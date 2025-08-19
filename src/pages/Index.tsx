@@ -28,11 +28,6 @@ const Index = () => {
                 Become a Mentor
               </Button>
             </Link>
-            <Link to="/auth">
-              <Button variant="supportive" size="lg">
-                Sign Up / Login
-              </Button>
-            </Link>
           </div>
         </div>
       </div>
