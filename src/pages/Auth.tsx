@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
@@ -18,7 +19,8 @@ const Auth = () => {
     email: "",
     password: "",
     username: "",
-    fullName: ""
+    fullName: "",
+    userType: ""
   });
   const [signInData, setSignInData] = useState({
     email: "",
@@ -31,12 +33,11 @@ const Auth = () => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log('Auth state change:', event, session);
         setSession(session);
         setUser(session?.user ?? null);
         
-        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
-          navigate('/');
+        if (session?.user) {
+          navigate("/");
         }
       }
     );
@@ -47,63 +48,55 @@ const Auth = () => {
       setUser(session?.user ?? null);
       
       if (session?.user) {
-        navigate('/');
+        navigate("/");
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate, toast]);
-
-  const checkUserProfileAndNavigate = async (userId: string) => {
-    try {
-      // Just navigate to home page after authentication
-      navigate('/');
-    } catch (error) {
-      console.error('Error in navigation:', error);
-      navigate('/');
-    }
-  };
+  }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
     
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: signUpData.email,
-        password: signUpData.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            username: signUpData.username || signUpData.email,
-            full_name: signUpData.fullName || signUpData.username,
-            user_type: 'patient'
-          }
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.user) {
-        toast({
-          title: "Account created successfully!",
-          description: "Welcome to Anonymous Recovery!"
-        });
-        
-        // If session exists, navigate immediately
-        if (data.session) {
-          navigate('/');
-        }
-      }
-    } catch (error: any) {
-      console.error('Signup error:', error);
+    if (!signUpData.userType) {
       toast({
-        title: "Sign up failed",
-        description: error.message || "Please try again",
+        title: "Please select user type",
+        description: "Choose whether you want to be a patient or mentor",
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    
+    const redirectUrl = `${window.location.origin}/`;
+    
+    const { error } = await supabase.auth.signUp({
+      email: signUpData.email,
+      password: signUpData.password,
+      options: {
+        emailRedirectTo: redirectUrl,
+        data: {
+          username: signUpData.username,
+          full_name: signUpData.fullName,
+          user_type: signUpData.userType
+        }
+      }
+    });
+
+    setLoading(false);
+
+    if (error) {
+      toast({
+        title: "Sign up failed",
+        description: error.message,
+        variant: "destructive"
+      });
+    } else {
+      toast({
+        title: "Check your email",
+        description: "We've sent you a confirmation link to complete your registration."
+      });
     }
   };
 
@@ -111,31 +104,19 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: signInData.email,
-        password: signInData.password
-      });
+    const { error } = await supabase.auth.signInWithPassword({
+      email: signInData.email,
+      password: signInData.password
+    });
 
-      if (error) throw error;
+    setLoading(false);
 
-      if (data.user && data.session) {
-        toast({
-          title: "Welcome back!",
-          description: "Successfully signed in."
-        });
-        navigate('/');
-      }
-    } catch (error: any) {
-      console.error('Sign in error:', error);
+    if (error) {
       toast({
-        title: "Sign in failed", 
-        description: error.message === 'Invalid login credentials' ? 
-          "Please check your email and password" : error.message,
+        title: "Sign in failed",
+        description: error.message,
         variant: "destructive"
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -195,6 +176,18 @@ const Auth = () => {
             
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
+                <div>
+                  <Label htmlFor="user-type">I want to</Label>
+                  <Select onValueChange={(value) => setSignUpData(prev => ({ ...prev, userType: value }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Choose your role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="patient">Get Support (Patient)</SelectItem>
+                      <SelectItem value="mentor">Help Others (Mentor)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div>
                   <Label htmlFor="username">Anonymous Username</Label>
                   <Input

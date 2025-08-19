@@ -40,20 +40,15 @@ const BecomeMentor = () => {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+      if (!session?.user) {
+        navigate("/auth");
+        return;
+      }
+      setUser(session.user);
     };
     
     checkUser();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user || null);
-      }
-    );
-
-    return () => subscription.unsubscribe();
-  }, []);
+  }, [navigate]);
 
   const handleAreaToggle = (areaId: string) => {
     setSelectedAreas(prev => 
@@ -67,11 +62,6 @@ const BecomeMentor = () => {
     e.preventDefault();
     
     if (!user) {
-      toast({
-        title: "Please sign up first",
-        description: "You need to create an account before becoming a mentor",
-        variant: "destructive"
-      });
       navigate("/auth");
       return;
     }
@@ -93,8 +83,7 @@ const BecomeMentor = () => {
                              formData.experience === "3-5" ? 5 :
                              formData.experience === "6-10" ? 10 : 15;
       
-      // Create mentor profile and update user type
-      const { error: mentorError } = await supabase
+      const { error } = await supabase
         .from('mentors')
         .insert({
           user_id: user.id,
@@ -104,22 +93,14 @@ const BecomeMentor = () => {
           is_available: true
         });
 
-      if (mentorError) throw mentorError;
-
-      // Update user profile to set user_type to mentor
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ user_type: 'mentor' })
-        .eq('user_id', user.id);
-
-      if (profileError) throw profileError;
+      if (error) throw error;
 
       toast({
         title: "Application submitted!",
         description: "Your mentor profile has been created successfully.",
       });
       
-      navigate("/mentor-dashboard");
+      navigate("/find-mentors");
     } catch (error: any) {
       toast({
         title: "Submission failed",
@@ -186,12 +167,12 @@ const BecomeMentor = () => {
                 {/* Basic Info */}
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold">Basic Information</h3>
-                  <div className="text-center p-4 bg-primary/10 rounded-lg border border-primary/20">
-                    <p className="text-sm text-foreground font-medium">
-                      Complete your mentor profile setup
+                  <div className="text-center p-4 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">
+                      You're logged in and ready to apply as a mentor!
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Choose your specialization areas and share your experience to help others.
+                      Your anonymous profile will be created based on your account.
                     </p>
                   </div>
                 </div>
