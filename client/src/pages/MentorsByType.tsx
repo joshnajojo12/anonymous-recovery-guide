@@ -4,11 +4,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, MessageCircle, Star } from "lucide-react";
-import { Link, useParams, useLocation } from "wouter";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
-import { useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import type { Profile } from '@shared/schema';
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from '@supabase/supabase-js';
 
 interface Mentor {
   id: string;
@@ -25,19 +24,71 @@ interface Mentor {
 
 const MentorsByType = () => {
   const { type } = useParams();
-  const [, navigate] = useLocation();
-  const [user, setUser] = useState<Profile | null>(null);
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [mentors, setMentors] = useState<Mentor[]>([]);
+  const [loading, setLoading] = useState(true);
   const addictionType = type?.charAt(0).toUpperCase() + type?.slice(1) || "Support";
-  
-  const { data: mentors = [], isLoading } = useQuery({
-    queryKey: [`/api/mentors?specialization=${type}`],
-  });
 
   useEffect(() => {
-    // Simplified auth check - in production you'd verify session
-    const userId = `user_${Date.now()}`;
-    setUser({ id: userId, userId, username: 'user', userType: 'patient' } as Profile);
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        navigate("/auth");
+        return;
+      }
+      setUser(session.user);
+    };
+    
+    checkAuth();
   }, [navigate]);
+
+  useEffect(() => {
+    if (!type) return;
+    
+    const fetchMentors = async () => {
+      try {
+        const { data: mentors, error } = await supabase
+          .from('mentors')
+          .select(`
+            id,
+            user_id,
+            specialization,
+            bio,
+            experience_years,
+            is_available
+          `)
+          .eq('is_available', true)
+          .ilike('specialization', `%${type}%`);
+
+        if (error) throw error;
+
+        // Fetch profiles separately to avoid relation issues
+        const mentorsWithProfiles = await Promise.all(
+          (mentors || []).map(async (mentor) => {
+            const { data: profile } = await supabase
+              .from('profiles')
+              .select('username, full_name')
+              .eq('user_id', mentor.user_id)
+              .single();
+            
+            return {
+              ...mentor,
+              profiles: profile
+            };
+          })
+        );
+
+        setMentors(mentorsWithProfiles);
+      } catch (error) {
+        console.error('Error fetching mentors:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMentors();
+  }, [type]);
 
   const handleStartChat = async (mentorId: string) => {
     if (!user) {
@@ -46,15 +97,32 @@ const MentorsByType = () => {
     }
 
     try {
-      const response = await apiRequest('/api/chat-rooms', {
-        method: 'POST',
-        body: JSON.stringify({
-          mentorId,
-          patientId: user.userId
-        })
-      });
+      // Check if chat room already exists
+      const { data: existingRoom } = await supabase
+        .from('chat_rooms')
+        .select('id')
+        .eq('mentor_id', mentorId)
+        .eq('patient_id', user.id)
+        .single();
 
-      navigate(`/chat/${response.id}`);
+      if (existingRoom) {
+        navigate(`/chat/${existingRoom.id}`);
+        return;
+      }
+
+      // Create new chat room
+      const { data: newRoom, error } = await supabase
+        .from('chat_rooms')
+        .insert({
+          mentor_id: mentorId,
+          patient_id: user.id
+        })
+        .select('id')
+        .single();
+
+      if (error) throw error;
+
+      navigate(`/chat/${newRoom.id}`);
     } catch (error) {
       console.error('Error creating chat room:', error);
     }
@@ -72,7 +140,7 @@ const MentorsByType = () => {
     return icons[type.toLowerCase()] || "💪";
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-background">
         <Navigation />

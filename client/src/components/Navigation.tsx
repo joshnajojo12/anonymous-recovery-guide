@@ -1,86 +1,99 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Link } from "wouter";
-import type { Profile } from '@shared/schema';
+import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import type { User } from '@supabase/supabase-js';
 
 const Navigation = () => {
-  const [user, setUser] = useState<Profile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<any>(null);
 
   useEffect(() => {
-    // Simplified auth check - in production, check real session
-    // For now, just simulating a logged-out state
+    // Get current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchUserProfile(session.user.id);
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchUserProfile(session.user.id);
+        } else {
+          setUserProfile(null);
+        }
+      }
+    );
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  const fetchUserProfile = async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+    setUserProfile(data);
+  };
+
   const handleSignOut = async () => {
-    setUser(null);
-    setUserProfile(null);
+    await supabase.auth.signOut();
   };
 
   return (
-    <nav className="fixed top-0 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b z-50">
-      <div className="max-w-6xl mx-auto px-safe">
-        <div className="flex justify-between items-center h-16">
-          <Link to="/">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-primary to-trust rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">AR</span>
-              </div>
-              <span className="font-semibold text-lg">Anonymous Recovery</span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-4">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-md border-b border-border">
+      <div className="max-w-6xl mx-auto px-safe py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 bg-gradient-hero rounded-soft"></div>
+            <span className="text-xl font-bold text-foreground">RecoveryConnect</span>
+          </div>
+          
+          <div className="hidden md:flex items-center space-x-8">
+            <Link to="/#how-it-works" className="text-muted-foreground hover:text-primary transition-colors">
+              How It Works
+            </Link>
+            <Link to="/find-mentors" className="text-muted-foreground hover:text-primary transition-colors">
+              Find Mentors
+            </Link>
+            {user && userProfile?.user_type === 'mentor' && (
+              <Link to="/mentor-dashboard" className="text-muted-foreground hover:text-primary transition-colors">
+                My Dashboard
+              </Link>
+            )}
+            <Link to="/#safety" className="text-muted-foreground hover:text-primary transition-colors">
+              Safety & Privacy
+            </Link>
+            <Link to="/#support" className="text-muted-foreground hover:text-primary transition-colors">
+              Support
+            </Link>
+          </div>
+          
+          <div className="flex items-center space-x-4">
             {user ? (
               <>
-                <Link to="/find-mentors">
-                  <Button variant="ghost" size="sm">
-                    Find Mentors
-                  </Button>
-                </Link>
-                
-                {userProfile?.userType === 'mentor' ? (
-                  <Link to="/mentor-dashboard">
-                    <Button variant="ghost" size="sm">
-                      Dashboard
-                    </Button>
-                  </Link>
-                ) : (
-                  <Link to="/become-mentor">
-                    <Button variant="ghost" size="sm">
-                      Become a Mentor
-                    </Button>
-                  </Link>
-                )}
-
-                <div className="flex items-center gap-2">
-                  <span className="text-sm text-muted-foreground">
-                    Welcome, {userProfile?.username || user.username}
-                  </span>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={handleSignOut}
-                  >
-                    Sign Out
-                  </Button>
-                </div>
+                <span className="text-sm text-muted-foreground">
+                  Hi, {userProfile?.username || 'User'}
+                </span>
+                <Button variant="ghost" size="sm" onClick={handleSignOut}>
+                  Sign Out
+                </Button>
               </>
             ) : (
               <>
-                <Link to="/find-mentors">
+                <Link to="/auth">
                   <Button variant="ghost" size="sm">
-                    Find Mentors
-                  </Button>
-                </Link>
-                <Link to="/become-mentor">
-                  <Button variant="ghost" size="sm">
-                    Become a Mentor
+                    Sign In
                   </Button>
                 </Link>
                 <Link to="/auth">
-                  <Button size="sm">
-                    Sign In
+                  <Button variant="hero" size="sm">
+                    Get Started
                   </Button>
                 </Link>
               </>

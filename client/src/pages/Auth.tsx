@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shield, Heart } from "lucide-react";
-import { useLocation } from "wouter";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
-import type { Profile } from "@shared/schema";
+import type { User, Session } from '@supabase/supabase-js';
 
 const Auth = () => {
-  const [user, setUser] = useState<Profile | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(false);
   const [signUpData, setSignUpData] = useState({
     email: "",
@@ -23,34 +24,77 @@ const Auth = () => {
     email: "",
     password: ""
   });
-  const [, navigate] = useLocation();
+  const navigate = useNavigate();
   const { toast } = useToast();
 
-  // No useEffect needed for auth state management in simplified version
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        console.log('Auth state change:', event, session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        
+        if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+          navigate('/');
+        }
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      
+      if (session?.user) {
+        navigate('/');
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, toast]);
+
+  const checkUserProfileAndNavigate = async (userId: string) => {
+    try {
+      // Just navigate to home page after authentication
+      navigate('/');
+    } catch (error) {
+      console.error('Error in navigation:', error);
+      navigate('/');
+    }
+  };
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      const response = await apiRequest('/api/auth/signup', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: signUpData.email,
-          password: signUpData.password,
-          username: signUpData.username || signUpData.email,
-          fullName: signUpData.fullName || signUpData.username,
-          userType: 'patient'
-        })
+      const { data, error } = await supabase.auth.signUp({
+        email: signUpData.email,
+        password: signUpData.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            username: signUpData.username || signUpData.email,
+            full_name: signUpData.fullName || signUpData.username,
+            user_type: 'patient'
+          }
+        }
       });
 
-      setUser(response.user);
-      toast({
-        title: "Account created successfully!",
-        description: "Welcome to Anonymous Recovery!"
-      });
-      
-      navigate('/');
+      if (error) throw error;
+
+      if (data.user) {
+        toast({
+          title: "Account created successfully!",
+          description: "Welcome to Anonymous Recovery!"
+        });
+        
+        // If session exists, navigate immediately
+        if (data.session) {
+          navigate('/');
+        }
+      }
     } catch (error: any) {
       console.error('Signup error:', error);
       toast({
@@ -68,26 +112,25 @@ const Auth = () => {
     setLoading(true);
 
     try {
-      const response = await apiRequest('/api/auth/signin', {
-        method: 'POST',
-        body: JSON.stringify({
-          email: signInData.email,
-          password: signInData.password
-        })
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: signInData.email,
+        password: signInData.password
       });
 
-      setUser(response.user);
-      toast({
-        title: "Welcome back!",
-        description: "Successfully signed in."
+      if (error) throw error;
+
+      if (data.user && data.session) {
+        toast({
+          title: "Welcome back!",
+          description: "Successfully signed in."
         });
-      
-      navigate('/');
+        navigate('/');
+      }
     } catch (error: any) {
       console.error('Sign in error:', error);
       toast({
         title: "Sign in failed", 
-        description: error.message === 'Invalid credentials' ? 
+        description: error.message === 'Invalid login credentials' ? 
           "Please check your email and password" : error.message,
         variant: "destructive"
       });
@@ -97,7 +140,7 @@ const Auth = () => {
   };
 
   if (user) {
-    return null; // Already authenticated
+    return null; // Will redirect in useEffect
   }
 
   return (
