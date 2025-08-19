@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { Link } from "wouter";
 import Navigation from "@/components/Navigation";
+import { useQuery } from "@tanstack/react-query";
 
 const FindMentors = () => {
   const [mentorCounts, setMentorCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
 
   const addictionTypes = [
     {
@@ -48,33 +47,21 @@ const FindMentors = () => {
     }
   ];
 
+  const { data: mentors, isLoading } = useQuery({
+    queryKey: ['/api/mentors'],
+  });
+
   useEffect(() => {
-    const fetchMentorCounts = async () => {
-      try {
-        const { data: mentors, error } = await supabase
-          .from('mentors')
-          .select('specialization')
-          .eq('is_available', true);
-
-        if (error) throw error;
-
-        const counts: Record<string, number> = {};
-        addictionTypes.forEach(type => {
-          counts[type.dbKey] = mentors?.filter(mentor => 
-            mentor.specialization?.toLowerCase().includes(type.dbKey.toLowerCase())
-          ).length || 0;
-        });
-
-        setMentorCounts(counts);
-      } catch (error) {
-        console.error('Error fetching mentor counts:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchMentorCounts();
-  }, []);
+    if (mentors) {
+      const counts: Record<string, number> = {};
+      addictionTypes.forEach(type => {
+        counts[type.dbKey] = mentors?.filter((mentor: any) => 
+          mentor.specialization?.toLowerCase().includes(type.dbKey.toLowerCase())
+        ).length || 0;
+      });
+      setMentorCounts(counts);
+    }
+  }, [mentors]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -102,7 +89,7 @@ const FindMentors = () => {
                   <div className="text-4xl mb-3">{addiction.icon}</div>
                   <CardTitle className="text-xl text-foreground">{addiction.type}</CardTitle>
                   <CardDescription className="text-trust font-medium text-sm">
-                    {loading ? "Loading..." : `${availableCount} available now`}
+                    {isLoading ? "Loading..." : `${availableCount} available now`}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0">
@@ -110,10 +97,10 @@ const FindMentors = () => {
                     {addiction.description}
                   </p>
                   <p className="text-sm text-muted-foreground text-center mb-6">
-                    {loading ? "Loading..." : `${mentorCount} mentors`}
+                    {isLoading ? "Loading..." : `${mentorCount} mentors`}
                   </p>
                   <Link to={`/mentors/${addiction.type.toLowerCase()}`}>
-                    <Button variant="supportive" className="w-full" disabled={loading}>
+                    <Button variant="supportive" className="w-full" disabled={isLoading}>
                       Connect Now
                     </Button>
                   </Link>

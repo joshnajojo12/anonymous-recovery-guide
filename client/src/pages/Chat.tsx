@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Send, Phone, Video, MoreVertical, Shield, ArrowLeft } from "lucide-react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useLocation } from "wouter";
 import Navigation from "@/components/Navigation";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import type { User } from '@supabase/supabase-js';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import type { Profile } from '@shared/schema';
 
 interface Message {
   id: string;
@@ -30,9 +31,9 @@ interface ChatRoom {
 
 const Chat = () => {
   const { mentorId } = useParams(); // This is actually the chatRoomId now
-  const navigate = useNavigate();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<Profile | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [chatRoom, setChatRoom] = useState<ChatRoom | null>(null);
   const [newMessage, setNewMessage] = useState("");
