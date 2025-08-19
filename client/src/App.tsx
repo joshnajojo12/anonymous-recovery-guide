@@ -12,25 +12,28 @@ import Chat from "./pages/Chat";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { queryClient } from "@/lib/queryClient";
+import { AuthProvider } from "@/contexts/AuthContext";
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <Router>
-        <Switch>
-          <Route path="/" component={Index} />
-          <Route path="/find-mentors" component={FindMentors} />
-          <Route path="/mentors/:type" component={MentorsByType} />
-          <Route path="/become-mentor" component={BecomeMentor} />
-          <Route path="/mentor-dashboard" component={MentorDashboard} />
-          <Route path="/chat/:mentorId" component={Chat} />
-          <Route path="/auth" component={Auth} />
-          <Route component={NotFound} />
-        </Switch>
-      </Router>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <Router>
+          <Switch>
+            <Route path="/" component={Index} />
+            <Route path="/find-mentors" component={FindMentors} />
+            <Route path="/mentors/:type" component={MentorsByType} />
+            <Route path="/become-mentor" component={BecomeMentor} />
+            <Route path="/mentor-dashboard" component={MentorDashboard} />
+            <Route path="/chat/:mentorId" component={Chat} />
+            <Route path="/auth" component={Auth} />
+            <Route component={NotFound} />
+          </Switch>
+        </Router>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
