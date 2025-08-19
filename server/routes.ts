@@ -308,12 +308,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get('/api/auth/me', async (req, res) => {
-    // Simplified - in a real app you'd check session or JWT
-    // For now, return no user since we don't have persistent sessions
-    res.status(401).json({ error: 'Not authenticated' });
-  });
-
   const httpServer = createServer(app);
 
   return httpServer;

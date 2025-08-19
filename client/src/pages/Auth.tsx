@@ -8,10 +8,10 @@ import { Shield, Heart } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { useAuth } from "@/contexts/AuthContext";
+import type { Profile } from "@shared/schema";
 
 const Auth = () => {
-  const { user, login } = useAuth();
+  const [user, setUser] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(false);
   const [signUpData, setSignUpData] = useState({
     email: "",
@@ -23,7 +23,7 @@ const Auth = () => {
     email: "",
     password: ""
   });
-  const [location, navigate] = useLocation();
+  const [, navigate] = useLocation();
   const { toast } = useToast();
 
   // No useEffect needed for auth state management in simplified version
@@ -44,7 +44,7 @@ const Auth = () => {
         })
       });
 
-      login(response.user);
+      setUser(response.user);
       toast({
         title: "Account created successfully!",
         description: "Welcome to Anonymous Recovery!"
@@ -76,7 +76,7 @@ const Auth = () => {
         })
       });
 
-      login(response.user);
+      setUser(response.user);
       toast({
         title: "Welcome back!",
         description: "Successfully signed in."
@@ -97,7 +97,6 @@ const Auth = () => {
   };
 
   if (user) {
-    navigate('/');
     return null; // Already authenticated
   }
 
