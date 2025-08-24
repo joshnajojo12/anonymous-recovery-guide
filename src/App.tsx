@@ -26,6 +26,8 @@ const App = () => (
           <Route path="/become-mentor" element={<BecomeMentor />} />
           <Route path="/chat/:mentorId" element={<Chat />} />
           <Route path="/auth" element={<Auth />} />
+          <Route path="/signin" element={<Auth />} />
+          <Route path="/signup" element={<Auth />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
