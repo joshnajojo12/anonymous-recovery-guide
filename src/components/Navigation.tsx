@@ -27,7 +27,7 @@ const Navigation = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <Link to="/signin">
+            <Link to="/auth">
               <Button variant="ghost" size="sm">
                 Sign In
               </Button>
